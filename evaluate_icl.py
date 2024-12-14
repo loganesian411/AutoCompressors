@@ -40,8 +40,8 @@ def get_model_tokenizer_device_isac(args):
         model = auto_compressor.LlamaAutoCompressorModel.from_pretrained(args.model_path)
         is_ac = True
 
-    elif "autocompressor" in args.model_path.lower(): # OPT AC
-        print(f"Loading OPT AutoCompressorModel from {args.model_path}")
+    elif "autocompressor" in args.model_path.lower() or "rmt" in args.model_path.lower(): # OPT AC
+        print(f"Loading OPT AutoCompressorModel or RMT from {args.model_path}")
         model = auto_compressor.AutoCompressorModel.from_pretrained(args.model_path)
         is_ac = True
 

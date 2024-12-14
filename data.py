@@ -222,7 +222,7 @@ def load_preprocessed_datasets(data_args, model_args):
 
     for valid_file in data_args.preprocessed_validation_datasets:
         name = os.path.basename(valid_file).split(".")[0]
-        if os.path.exists(train_file):
+        if os.path.exists(valid_file):
             data = datasets.load_from_disk(valid_file)
         else:
             data = datasets.load_dataset(
@@ -239,7 +239,10 @@ def load_preprocessed_datasets(data_args, model_args):
     for key in d.keys():
         if key.startswith("train"):
             train_data.append(d[key])
-    d["train"] = datasets.concatenate_datasets(train_data)
+    if train_data:
+        d["train"] = datasets.concatenate_datasets(train_data)
+    else:
+        d["train"] = []
 
     lm_datasets = datasets.dataset_dict.DatasetDict(d)
     return lm_datasets

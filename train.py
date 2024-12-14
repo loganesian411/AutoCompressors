@@ -46,6 +46,13 @@ def main():
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
+
+    # rank          = int(os.environ["SLURM_PROCID"])
+    # world_size    = int(os.environ["WORLD_SIZE"])
+    # gpus_per_node = int(os.environ["SLURM_GPUS_ON_NODE"])
+    # training_args.n_gpu = gpus_per_node
+    # training_args.local_rank = rank - gpus_per_node * (rank // gpus_per_node) 
+
     # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -158,6 +165,7 @@ def main():
     config.summary_length = training_args.summary_length
     config.accumulate_summary = training_args.accumulate_summary
     config.segment_gradient_checkpointing = training_args.segment_gradient_checkpointing
+    # import ipdb; ipdb.set_trace()
 
     # Create model
     if "llama" in (model_args.model_name_or_path or model_args.config_name).lower():
@@ -175,7 +183,7 @@ def main():
             cache_dir=model_args.cache_dir,
             revision=model_args.model_revision,
             use_auth_token=True if model_args.use_auth_token else None,
-            torch_dtype=(half_dtype if model_args.lora or model_args.lora_path else None),
+            torch_dtype=(half_dtype if model_args.lora or model_args.lora_path or (training_args.do_eval and not training_args.do_train and "llama" in model_args.model_name_or_path.lower()) else None),
         )
     else:
         model = AutoCompressorModel.from_config(config)
