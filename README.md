@@ -103,6 +103,75 @@ The summary vectors for a given context can be obtained in two ways:
 1. **Explicitly:** Call the model with `out = model(input_ids, attention_mask, ..., output_softprompt=True)` and obtain the summary vectors as `summary_vectors = out.softprompt` which can be passed to further calls by `model(..., softprompt=sumary_vectors)`.
 2. **Implicitly:** Call the model with `out = model(input_ids, segment_lengths=segment_lengths)`, where `segment_lengths` is a list of integers that should add up to the overall sequence length `input_ids.size(1)`. After each segment, the model will automatically generate the summary vectors and prepend them to the next segment. This can still be combined with `output_softprompt=True` to generate the final summary vectors for the entire input. This is convenient for multi-step compression of long inputs, which would otherwise exceed the model's maximum position.
 
+### Example use of ICL evaluation scripts
+To reproduce the In-Context Learning (ICL) results presented in the paper, follow these steps:
+
+1. Open the script ```create_sbatch_script_single_seed.py```.
+2. Configure the following variables with your desired settings for the model, experiment name, dataset, and seed information.
+
+The relevant section of the script is shown below:
+
+```python
+if __name__ == '__main__':
+    # Define experiment names for each model
+
+    # OPT ICL
+    # experiment_names = {
+    #     'facebook/opt-2.7b': ['zero_shot', 'icl_150', 'icl_750'], 
+    #     'princeton-nlp/AutoCompressor-2.7b-6k': [
+    #         'zero_shot', 'icl_150', 'icl_750', 'summary_50', 'summary_100', 'summary_150'
+    #     ]
+    # }
+
+    # RMT
+    experiment_names = {
+        'princeton-nlp/RMT-2.7b-8k': [
+            'zero_shot', 'icl_150', 'icl_750', 'summary_50', 'summary_100', 'summary_150'
+        ]
+    }
+
+    # Llama ICL
+    # experiment_names = {
+    #     'meta-llama/Llama-2-7b-hf': [
+    #         'zero_shot', 'icl_150', 'icl_750'
+    #     ],
+    #     'princeton-nlp/AutoCompressor-Llama-2-7b-6k': [
+    #         'zero_shot', 'icl_150', 'icl_750', 'summary_50', 'summary_100', 'summary_150'
+    #     ]
+    # }
+
+    # Specify datasets and seeds
+    datasets = ['ag_news', 'sst2', 'boolq', 'wic', 'wsc', 'rte', 'cb', 'copa', 'multirc', 'mr', 'subj']
+    seeds = list(range(7))  # Modify seeds as needed for debugging or experimentation
+
+    # Generate SBATCH scripts and result paths
+    runs, result_path_dict = create_runs_from_experiments(experiment_names, datasets, seeds=seeds)
+
+    # Save result paths to a JSON file (optional)
+    with open('result_path_dict.json', 'w') as f:
+        json.dump(result_path_dict, f)
+
+    print("SBATCH scripts created successfully.")
+
+```
+
+
+
+3. Modify the experiment_names, datasets, and seeds as needed to match your experimental setup.
+4. Run the script with ```python create_sbatch_script_single_seed.py``` to generate the SBATCH scripts and save the resulting path information to result_path_dict.json (or another dict name you prefer).
+5. Verify that the SBATCH scripts have been created successfully and proceed with running your experiments.
+6. Modify ```run_sbatch_scripts.sh ``` to set the correct SCRIPT_DIR (this is the directory that has your SBATCH scripts)
+7. Execute the following command to submit all SLURM jobs:
+```./run_sbatch_scripts.sh ```
+
+8. Once the jobs complete, run the following command to extract accuracy results from the output logs:
+
+```python get_scores_from_json.py --input_json_filename /path/to/your/result_dict_file --output_json_filename /path/to/your/accuracy_dict_file```
+
+This will create a dictionary that has the following format:
+
+```accuracy_dict[model_name][dataset][experiment_name][seed] = accuracy_value```
+
 ## Bug or Questions?
 If you have any questions related to the code or the paper, feel free to email
 Alexis and Alexander (`achevalier@ias.edu, awettig@cs.princeton.edu`).
